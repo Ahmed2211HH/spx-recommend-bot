@@ -49,7 +49,7 @@ async def cb(u: Update, cx: ContextTypes.DEFAULT_TYPE):
         await cx.bot.send_message(u.from_user.id, "❌ تم رفض الإيصال.")
     await u.answer()
 
-scheduler = AsyncIOScheduler()
+scheduler = BackgroundScheduler()
 async def monitor():
     for ct in tracked_contracts:
         price = float(wb.get_option_market_data(ct['symbol'])['mark'])
