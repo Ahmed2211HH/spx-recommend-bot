@@ -16,8 +16,8 @@ c = conn.cursor()
 c.execute('CREATE TABLE IF NOT EXISTS subs (phone TEXT, chat_id INTEGER, sub_date TEXT)')
 conn.commit()
 
-wb = webull(); wb.login()
-tracked_contracts = []
+wb = webull()
+wb.login(username=os.environ['WB_USER'], password=os.environ['WB_PASS'])
 
 async def start(u: Update, cx: ContextTypes.DEFAULT_TYPE):
     kb = ReplyKeyboardMarkup([[KeyboardButton("مشاركة رقمي", request_contact=True)]], one_time_keyboard=True)
