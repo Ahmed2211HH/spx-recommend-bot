@@ -57,6 +57,11 @@ async def receipt(u: Update, cx: ContextTypes.DEFAULT_TYPE):
     await cx.bot.send_message(chat_id=OWNER_ID, text="تم إرسال الإيصال للمراجعة", reply_markup=kb)
     await u.message.reply_text("تم إرسال الإيصال للمراجعة")
 
+    ])
+    await cx.bot.forward_message(chat_id=OWNER_ID, from_chat_id=u.effective_chat.id, message_id=u.message.message_id)
+    await cx.bot.send_message(chat_id=OWNER_ID, text="تم إرسال الإيصال للمراجعة", reply_markup=kb)
+    await u.message.reply_text("تم إرسال الإيصال للمراجعة")
+
     await cx.bot.forward_message(chat_id=OWNER_ID, from_chat_id=u.effective_chat.id, message_id=u.message.message_id)
     await cx.bot.send_message(chat_id=OWNER_ID, text="تم إرسال الإيصال للمراجعة", reply_markup=kb)
     await u.message.reply_text("تم إرسال الإيصال للمراجعة")
