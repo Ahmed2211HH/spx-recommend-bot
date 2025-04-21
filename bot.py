@@ -41,7 +41,7 @@ async def contact(u: Update, cx: ContextTypes.DEFAULT_TYPE):
     if row and datetime.fromisoformat(row[0]) > datetime.now():
         await u.message.reply_text("✅ أنت مشترك")
     else:
-        await u.message.reply_text(f"يبدو أنك غير مشترك.
+       await u.message.reply_text(f"أرسل رقمك للتأكد من الاشتراك.")
 اشترك هنا: {STORE_LINK}")
 
 async def receipt(u: Update, cx: ContextTypes.DEFAULT_TYPE):
