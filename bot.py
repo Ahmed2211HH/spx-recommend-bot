@@ -58,15 +58,18 @@ async def receipt(u: Update, cx: ContextTypes.DEFAULT_TYPE):
 
 
 async def cb(u: Update, cx: ContextTypes.DEFAULT_TYPE):
-    if u.data.startswith("ok:"):
-        uid = int(u.data.split(":")[1])
-        c.execute("INSERT OR REPLACE INTO subs VALUES (?,?)", (str(uid), datetime.now().isoformat()))
+    data = u.callback_query.data
+    uid = int(data.split(":")[1])
+
+    if data.startswith("ok:"):
+        c.execute("INSERT OR REPLACE INTO subs VALUES (?, ?)", (str(uid), datetime.now().isoformat()))
         conn.commit()
         await cx.bot.invite_chat_member(chat_id=GROUP_ID, user_id=uid)
         await cx.bot.send_message(uid, "✔️ تمت إضافتك للمجموعة")
-    elif u.data.startswith("no:"):
-        uid = int(u.data.split(":")[1])
+    elif data.startswith("no:"):
         await cx.bot.send_message(uid, "❌ تم رفض الإيصال")
+    
+    await u.callback_query.answer()  # ضروري عشان يختفي التحميل
 
 async def setstep(u: Update, cx: ContextTypes.DEFAULT_TYPE):
     if u.effective_user.id != OWNER_ID:
