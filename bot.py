@@ -48,8 +48,15 @@ async def contact(u: Update, cx: ContextTypes.DEFAULT_TYPE):
         await u.message.reply_text(f"❌ يبدو أنك غير مشترك، اشترك هنا: {STORE_LINK}")
 
 async def receipt(u: Update, cx: ContextTypes.DEFAULT_TYPE):
+    uid = u.effective_user.id
+    kb = InlineKeyboardMarkup([
+        [InlineKeyboardButton("✅ موافقة", callback_data=f"ok:{uid}"),
+         InlineKeyboardButton("❌ رفض", callback_data=f"no:{uid}")]
+    ])
     await cx.bot.forward_message(chat_id=OWNER_ID, from_chat_id=u.effective_chat.id, message_id=u.message.message_id)
+    await cx.bot.send_message(chat_id=OWNER_ID, text="تم إرسال الإيصال للمراجعة", reply_markup=kb)
     await u.message.reply_text("تم إرسال الإيصال للمراجعة")
+
 
 async def cb(u: Update, cx: ContextTypes.DEFAULT_TYPE):
     if u.data.startswith("ok:"):
