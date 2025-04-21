@@ -50,9 +50,12 @@ async def contact(u: Update, cx: ContextTypes.DEFAULT_TYPE):
 async def receipt(u: Update, cx: ContextTypes.DEFAULT_TYPE):
     uid = u.effective_user.id
     kb = InlineKeyboardMarkup([
-        [InlineKeyboardButton("الموافقة على الإضافة ✅", callback_data=f"ok:{uid}")],
-        [InlineKeyboardButton("رفض الإضافة ❌", callback_data=f"no:{uid}")]
-    ])
+    [
+        InlineKeyboardButton("موافقة ✅", callback_data=f"ok:{u.message.from_user.id}"),
+        InlineKeyboardButton("رفض ❌", callback_data=f"no:{u.message.from_user.id}")
+    ]
+])
+
     await cx.bot.forward_message(chat_id=OWNER_ID, from_chat_id=u.effective_chat.id, message_id=u.message.message_id)
     await cx.bot.send_message(chat_id=OWNER_ID, text="تم إرسال الإيصال للمراجعة", reply_markup=kb)
     await u.message.reply_text("تم إرسال الإيصال للمراجعة")
