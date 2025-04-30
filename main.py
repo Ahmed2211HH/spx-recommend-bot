@@ -5,7 +5,7 @@ from telegram.ext import (
 )
 
 # إعدادات
-TOKEN = '7737113763:AAEaci6zbqdZ8oD2O-79gZ2sKz2q9qrZy9c'  # توكن البوت
+TOKEN = '7737113763:AAF2XR_qUMIFwbMUz37imbJZP22wYh4ulDQ'  # توكن البوت
 CHANNEL_ID_VIP = -1002352256587
 CHANNEL_INVITE_LINK = 'https://t.me/+DaHQpgAd3doyMTg0'
 STORE_LINK = 'https://options-x.com/باقة-قناة-سباكس-لمدة-٣٠-يوم/p1136204150'
