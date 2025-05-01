@@ -131,7 +131,7 @@ def main():
     app.add_handler(CallbackQueryHandler(send_receipt, pattern="^send_receipt$"))
     app.add_handler(MessageHandler(filters.PHOTO & filters.ChatType.PRIVATE, check_receipt))
     app.add_handler(CallbackQueryHandler(handle_approval, pattern="^(approve_|reject_).*"))
-    app.job_queue.run_repeating(monitor_price, interval=30, first=5)
+   application.job_queue.run_repeating(...)
     app.run_polling()
 
 if __name__ == "__main__":
