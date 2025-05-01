@@ -9,7 +9,7 @@ from PIL import Image, ImageDraw
 
 # إعدادات
 TOKEN = '7737113763:AAF2XR_qUMIFwbMUz37imbJZP22wYh4ulDQ'
-CHANNEL_ID_VIP = -1002352256587
+CHANNEL_ID_VIP = -1002529600259
 CHANNEL_INVITE_LINK = 'https://t.me/+DaHQpgAd3doyMTg0'
 STORE_LINK = 'https://options-x.com/باقة-قناة-سباكس-لمدة-٣٠-يوم/p1136204150'
 OWNER_ID = 7123756100
