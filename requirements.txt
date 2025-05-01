@@ -1,5 +1,3 @@
 python-telegram-bot==20.3
-Flask
-Pillow
-aiohttp
-playwright
+playwright==1.34.0
+flask==2.2.5
