@@ -1,5 +1,12 @@
+# -*- coding: utf-8 -*-
+# هذا الملف يقوم بتثبيت المتصفحات اللازمة لتشغيل Playwright (يتم استدعاؤه أثناء عملية التحضير للنشر)
 import subprocess
+import sys
 
-# تشغيل أمر تثبيت المتصفحات اللازمة لـ Playwright
-# سيقوم هذا الأمر بتحميل WebKit و Firefox و Chromium. يمكن تحديد chromium فقط لتقليل الحجم:
-subprocess.run(["playwright", "install", "chromium"])
+# تشغيل أمر التثبيت عبر pip
+try:
+    # الأمر التالي يقوم بتنزيل المتصفحات المطلوبة لـ Playwright
+    subprocess.run([sys.executable, "-m", "playwright", "install", "--with-deps"], check=True)
+    print("Playwright browsers installed successfully.")
+except subprocess.CalledProcessError as e:
+    print("Failed to install Playwright browsers:", e)
