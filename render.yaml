@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: spx-recommend-bot
+    runtime: python
+    buildCommand: "pip install -r requirements.txt && python install_playwright.py"
+    startCommand: "python main.py"
+    plan: free
