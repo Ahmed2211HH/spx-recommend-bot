@@ -1,7 +1,5 @@
-import asyncio
-from playwright.__main__ import main
+import subprocess
 
-async def run():
-    await main(["install"])
-
-asyncio.run(run())
+# تشغيل أمر تثبيت المتصفحات اللازمة لـ Playwright
+# سيقوم هذا الأمر بتحميل WebKit و Firefox و Chromium. يمكن تحديد chromium فقط لتقليل الحجم:
+subprocess.run(["playwright", "install", "chromium"])
