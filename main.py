@@ -5,7 +5,7 @@ from telegram.ext import (
 )
 
 # إعدادات
-TOKEN = '7871962563:AAH-Lslf0jR5Pr1F0x8fxWvivzDMXMt0Kro'  # توكن البوت الجديد
+TOKEN = '7737113763:AAF2XR_qUMIFwbMUz37imbJZP22wYh4ulDQ'  # توكن البوت الجديد 
 CHANNEL_ID_VIP = -1002352256587  # معرف القناة (مؤقتًا، غيرته زي القديم)
 CHANNEL_INVITE_LINK = 'https://t.me/+HZK1cZqHTRhmM2E0'
 STORE_LINK = 'https://options-x.com/Kjeomqy'
