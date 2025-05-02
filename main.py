@@ -1,123 +1,94 @@
-
+import asyncio
+import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import (
-    ApplicationBuilder, CommandHandler, CallbackQueryHandler,
-    MessageHandler, filters, ContextTypes
-)
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, ContextTypes, filters
+from playwright.async_api import async_playwright
 
-# إعدادات
-TOKEN = '7737113763:AAF2XR_qUMIFwbMUz37imbJZP22wYh4ulDQ'  # توكن البوت
-CHANNEL_ID_VIP = -1002352256587
-CHANNEL_INVITE_LINK = 'https://t.me/+DaHQpgAd3doyMTg0'
-STORE_LINK = 'https://options-x.com/باقة-قناة-سباكس-لمدة-٣٠-يوم/p1136204150'
+# إعدادات البوت
+TOKEN = '7885914349:AAHFM6qMX_CYOOajGwhczwXl3mnLjqRJIAg'
 OWNER_ID = 7123756100
+CHANNEL_ID = -1002529600259
 
-# قاموس لتخزين المستخدمين الذين ينتظرون الموافقة
-pending_users = {}
-approved_users = {}
+monitoring = False
+contract_name = ""
+threshold = 0.3
+last_price = 0
 
-# دالة بدء المحادثة
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user
+    if update.effective_user.id != OWNER_ID:
+        return
     keyboard = [
-        [InlineKeyboardButton("زيارة المتجر", url=STORE_LINK)],
-        [InlineKeyboardButton("إرسال إيصال الدفع", callback_data="send_receipt")]
+        [InlineKeyboardButton("تحديد العقد", callback_data="set_contract")],
+        [InlineKeyboardButton("إيقاف التحديث", callback_data="stop_monitoring")],
+        [InlineKeyboardButton("إرسال تجربة", callback_data="test_capture")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    await update.message.reply_text(
-        f"مرحباً {user.first_name}! 👋\n"
-        "اختر أحد الخيارات أدناه:",
-        reply_markup=reply_markup
-    )
+    await update.message.reply_text("مرحباً! تحكم في العقد من هنا:", reply_markup=reply_markup)
 
-# دالة عند الضغط على إرسال إيصال الدفع
-async def send_receipt(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
+    if update.effective_user.id != OWNER_ID:
+        return
+    if query.data == "set_contract":
+        await query.edit_message_text("أرسل اسم العقد (مثال: SPXW 5740C 02May):")
+        return 1
+    elif query.data == "stop_monitoring":
+        global monitoring
+        monitoring = False
+        await query.edit_message_text("تم إيقاف التحديث ❌")
+        return -1
+    elif query.data == "test_capture":
+        await capture_image()
+        with open("contract.png", "rb") as photo:
+            await context.bot.send_photo(chat_id=OWNER_ID, photo=photo)
+        await query.edit_message_text("تم إرسال الصورة التجريبية.")
+        return -1
 
-    user_id = update.effective_user.id
-    if user_id in approved_users:
-        await query.edit_message_text("تمت إضافتك بالفعل إلى القناة الخاصة!")
-    elif user_id in pending_users:
-        await query.edit_message_text("طلبك قيد المراجعة بالفعل. يرجى الانتظار.")
-    else:
-        await query.edit_message_text("يرجى إرسال صورة إيصال الدفع هنا للتحقق.")
-        context.user_data["awaiting_receipt"] = True
+async def receive_contract(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    global contract_name
+    contract_name = update.message.text.strip()
+    await update.message.reply_text("الآن أرسل قيمة التحديث (مثال 0.30):")
+    return 2
 
-# دالة معالجة الإيصال
-async def check_receipt(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if context.user_data.get("awaiting_receipt") and update.message.photo:
-        user = update.effective_user
-        user_id = user.id
+async def receive_threshold(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    global threshold, monitoring, last_price
+    try:
+        threshold = float(update.message.text.strip())
+        monitoring = True
+        last_price = 0
+        await update.message.reply_text("✅ تم بدء المراقبة للعقد...")
+        asyncio.create_task(monitor_contract(context))
+    except:
+        await update.message.reply_text("❌ تأكد من كتابة رقم صحيح.")
+    return -1
 
-        if user_id in pending_users:
-            await update.message.reply_text("طلبك قيد المراجعة بالفعل.")
-            return
+async def capture_image():
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        context = await browser.new_context(viewport={"width": 1280, "height": 800})
+        page = await context.new_page()
+        await page.goto("https://app.webull.com/paper/desktop")
+        await page.wait_for_timeout(5000)
+        await page.screenshot(path="contract.png")
+        await browser.close()
 
-        # إرسال الإيصال إلى المالك مع أزرار الموافقة أو الرفض
-        keyboard = [
-            [
-                InlineKeyboardButton("✅ الموافقة على الإضافة", callback_data=f"approve_{user_id}"),
-                InlineKeyboardButton("❌ رفض الإضافة", callback_data=f"reject_{user_id}")
-            ]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-
-        await context.bot.send_photo(chat_id=OWNER_ID, photo=update.message.photo[-1].file_id, caption=f"📥 إيصال من {user.first_name} (ID: {user_id})", reply_markup=reply_markup)
-
-        pending_users[user_id] = user
-        context.user_data["awaiting_receipt"] = False
-
-        await update.message.reply_text("✅ تم استلام الإيصال بنجاح، سيتم التحقق منه قريباً.")
-
-# دالة الموافقة أو الرفض بناءً على الضغط على الأزرار
-async def handle_approval(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-
-    data = query.data
-    if data.startswith("approve_"):
-        user_id = int(data.split("_")[1])
-
-        if user_id in pending_users:
-            user = pending_users.pop(user_id)
-            try:
-                await context.bot.send_message(
-                    chat_id=user_id,
-                    text=f"🎉 تم التحقق من إيصالك! يمكنك الآن الانضمام إلى القناة الخاصة:\n{CHANNEL_INVITE_LINK}"
-                )
-                await query.edit_message_caption(caption="✅ تم الموافقة على الإضافة وإرسال الدعوة.", reply_markup=None)
-                approved_users[user_id] = user
-            except Exception as e:
-                await context.bot.send_message(chat_id=OWNER_ID, text=f"❌ خطأ أثناء إضافة المستخدم {user_id}: {e}")
-        else:
-            await query.edit_message_caption(caption="⚠️ المستخدم غير موجود في قائمة الانتظار.", reply_markup=None)
-
-    elif data.startswith("reject_"):
-        user_id = int(data.split("_")[1])
-
-        if user_id in pending_users:
-            pending_users.pop(user_id)
-            await query.edit_message_caption(caption="❌ تم رفض الإضافة.", reply_markup=None)
-            await context.bot.send_message(chat_id=user_id, text="❌ تم رفض طلبك. يمكنك التواصل معنا لمزيد من التفاصيل.")
-        else:
-            await query.edit_message_caption(caption="⚠️ المستخدم غير موجود في قائمة الانتظار.", reply_markup=None)
-
-# تشغيل البوت
-def main():
-    application = ApplicationBuilder().token(TOKEN).build()
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CallbackQueryHandler(send_receipt, pattern="^send_receipt$"))
-    application.add_handler(MessageHandler(filters.PHOTO & filters.ChatType.PRIVATE, check_receipt))
-    application.add_handler(CallbackQueryHandler(handle_approval, pattern="^(approve_|reject_).*"))
-
-    from keep_alive import keep_alive
-    keep_alive()
-    application.run_polling()
+async def monitor_contract(context: ContextTypes.DEFAULT_TYPE):
+    global last_price
+    while monitoring:
+        await capture_image()
+        new_price = round(last_price + threshold, 2)  # محاكاة
+        if new_price - last_price >= threshold:
+            last_price = new_price
+            with open("contract.png", "rb") as photo:
+                await context.bot.send_photo(chat_id=CHANNEL_ID, photo=photo)
+        await asyncio.sleep(3)
 
 if __name__ == "__main__":
-    main()
-
-
-
-
+    logging.basicConfig(level=logging.INFO)
+    app = Application.builder().token(TOKEN).build()
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CallbackQueryHandler(button_handler))
+    app.add_handler(MessageHandler(filters.TEXT & filters.User(user_id=OWNER_ID), receive_contract))
+    app.add_handler(MessageHandler(filters.TEXT & filters.User(user_id=OWNER_ID), receive_threshold))
+    app.run_polling()
