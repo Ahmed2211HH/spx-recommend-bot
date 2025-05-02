@@ -7,8 +7,8 @@ from telegram.ext import (
 # إعدادات
 TOKEN = '7737113763:AAF2XR_qUMIFwbMUz37imbJZP22wYh4ulDQ'  # توكن البوت الجديد 
 CHANNEL_ID_VIP = -1002352256587  # معرف القناة (مؤقتًا، غيرته زي القديم)
-CHANNEL_INVITE_LINK = 'https://t.me/+HZK1cZqHTRhmM2E0'
-STORE_LINK = 'https://options-x.com/Kjeomqy'
+CHANNEL_INVITE_LINK = 'https://t.me/+DaHQpgAd3doyMTg0'
+STORE_LINK = 'https://options-x.com/%D8%A8%D8%A7%D9%82%D8%A9-%D9%82%D9%86%D8%A7%D8%A9-%D8%B3%D8%A8%D8%A7%D9%83%D8%B3-%D9%84%D9%85%D8%AF%D8%A9-%D9%A3%D9%A0-%D9%8A%D9%88%D9%85/p1136204150'
 OWNER_ID = 7123756100
 
 # قاموس لتخزين المستخدمين الذين ينتظرون الموافقة
