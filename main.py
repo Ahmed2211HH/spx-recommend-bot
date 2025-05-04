@@ -1,35 +1,39 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder, CommandHandler, CallbackQueryHandler,
     MessageHandler, filters, ContextTypes
 )
 
 # إعدادات
-TOKEN = '7737113763:AAHx3jZ3cEjTOi8YJqCwpD_qJF2rhefA3wU'  # توكن البوت الجديد 
-CHANNEL_ID_VIP = -1002352256587  # معرف القناة (مؤقتًا، غيرته زي القديم)
+TOKEN = '7737113763:AAHx3jZ3cEjTOi8YJqCwpD_qJF2rhefA3wU'
+CHANNEL_ID_VIP = -1002352256587
 CHANNEL_INVITE_LINK = 'https://t.me/+DaHQpgAd3doyMTg0'
-STORE_LINK = 'https://options-x.com/%D8%A8%D8%A7%D9%82%D8%A9-%D9%82%D9%86%D8%A7%D8%A9-%D8%B3%D8%A8%D8%A7%D9%83%D8%B3-%D9%84%D9%85%D8%AF%D8%A9-%D9%A3%D9%A0-%D9%8A%D9%88%D9%85/p1136204150'
+STORE_LINK = 'https://options-x.com/باقة-قناة-سباكس-لمدة-٣٠-يوم/p1136204150'
 OWNER_ID = 7123756100
 
-# قاموس لتخزين المستخدمين الذين ينتظرون الموافقة
 pending_users = {}
 approved_users = {}
 
 # دالة بدء المحادثة
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    keyboard = [
+    inline_keyboard = [
         [InlineKeyboardButton("زيارة المتجر", url=STORE_LINK)],
-        [InlineKeyboardButton("إرسال إيصال الدفع", callback_data="send_receipt")]
+        [InlineKeyboardButton("إرسال إيصال الدفع", callback_data="send_receipt")],
+        [InlineKeyboardButton("الدعم الفني", url="https://t.me/OptionXn")]
     ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await update.message.reply_text(
-        f"مرحباً {user.first_name}! 👋\n"
-        "اختر أحد الخيارات أدناه:",
-        reply_markup=reply_markup
-    )
+    reply_markup_inline = InlineKeyboardMarkup(inline_keyboard)
 
-# دالة عند الضغط على إرسال إيصال الدفع
+    reply_keyboard = [["القائمة"]]
+    reply_markup_keyboard = ReplyKeyboardMarkup(reply_keyboard, resize_keyboard=True)
+
+    await update.message.reply_text(
+        f"مرحباً {user.first_name}! 👋\nاختر أحد الخيارات أدناه:",
+        reply_markup=reply_markup_inline
+    )
+    await update.message.reply_text("استخدم الزر في الأسفل للعودة إلى القائمة.", reply_markup=reply_markup_keyboard)
+
+# دالة عند الضغط على "إرسال إيصال الدفع"
 async def send_receipt(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -53,38 +57,31 @@ async def check_receipt(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text("طلبك قيد المراجعة بالفعل.")
             return
 
-        # إرسال الإيصال إلى المالك مع أزرار الموافقة أو الرفض
-        keyboard = [
-            [
-                InlineKeyboardButton("✅ الموافقة على الإضافة", callback_data=f"approve_{user_id}"),
-                InlineKeyboardButton("❌ رفض الإضافة", callback_data=f"reject_{user_id}")
-            ]
-        ]
+        keyboard = [[
+            InlineKeyboardButton("✅ الموافقة على الإضافة", callback_data=f"approve_{user_id}"),
+            InlineKeyboardButton("❌ رفض الإضافة", callback_data=f"reject_{user_id}")
+        ]]
         reply_markup = InlineKeyboardMarkup(keyboard)
 
-        await context.bot.send_photo(chat_id=OWNER_ID, photo=update.message.photo[-1].file_id, caption=f"📥 إيصال من {user.first_name} (ID: {user_id})", reply_markup=reply_markup)
+        await context.bot.send_photo(chat_id=OWNER_ID, photo=update.message.photo[-1].file_id,
+                                     caption=f"📥 إيصال من {user.first_name} (ID: {user_id})", reply_markup=reply_markup)
 
         pending_users[user_id] = user
         context.user_data["awaiting_receipt"] = False
-
         await update.message.reply_text("✅ تم استلام الإيصال بنجاح، سيتم التحقق منه قريباً.")
 
-# دالة الموافقة أو الرفض بناءً على الضغط على الأزرار
+# دالة الموافقة أو الرفض
 async def handle_approval(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-
     data = query.data
+
     if data.startswith("approve_"):
         user_id = int(data.split("_")[1])
-
         if user_id in pending_users:
             user = pending_users.pop(user_id)
             try:
-                await context.bot.send_message(
-                    chat_id=user_id,
-                    text=f"🎉 تم التحقق من إيصالك! يمكنك الآن الانضمام إلى القناة الخاصة:\n{CHANNEL_INVITE_LINK}"
-                )
+                await context.bot.send_message(chat_id=user_id, text=f"🎉 تم التحقق من إيصالك! يمكنك الآن الانضمام إلى القناة الخاصة:\n{CHANNEL_INVITE_LINK}")
                 await query.edit_message_caption(caption="✅ تم الموافقة على الإضافة وإرسال الدعوة.", reply_markup=None)
                 approved_users[user_id] = user
             except Exception as e:
@@ -94,13 +91,17 @@ async def handle_approval(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif data.startswith("reject_"):
         user_id = int(data.split("_")[1])
-
         if user_id in pending_users:
             pending_users.pop(user_id)
             await query.edit_message_caption(caption="❌ تم رفض الإضافة.", reply_markup=None)
             await context.bot.send_message(chat_id=user_id, text="❌ تم رفض طلبك. يمكنك التواصل معنا لمزيد من التفاصيل.")
         else:
             await query.edit_message_caption(caption="⚠️ المستخدم غير موجود في قائمة الانتظار.", reply_markup=None)
+
+# دالة التعامل مع زر "القائمة"
+async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.text == "القائمة":
+        await start(update, context)
 
 # تشغيل البوت
 def main():
@@ -109,6 +110,7 @@ def main():
     application.add_handler(CallbackQueryHandler(send_receipt, pattern="^send_receipt$"))
     application.add_handler(MessageHandler(filters.PHOTO & filters.ChatType.PRIVATE, check_receipt))
     application.add_handler(CallbackQueryHandler(handle_approval, pattern="^(approve_|reject_).*"))
+    application.add_handler(MessageHandler(filters.TEXT & filters.ChatType.PRIVATE, handle_text))
 
     from keep_alive import keep_alive
     keep_alive()
