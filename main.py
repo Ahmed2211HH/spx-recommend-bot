@@ -36,14 +36,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_photo(
             chat_id=admin_id,
             photo=photo.file_id,
-            caption=f"ð¥ Ø¥ÙØµØ§Ù Ø¬Ø¯ÙØ¯ ÙÙ: {user.full_name}
-ID: {user.id}
-
-ÙÙÙÙØ§ÙÙØ©:
-/accept {user.id}
-ÙÙØ±ÙØ¶:
-/reject {user.id}"
-        )
+            caption = f"📥 إيصال جديد من: {user.full_name}\nID: {user.id}\n\nللموافقة:\n/accept {user.id}\nللرفض:\n/reject {user.id}"
     await update.message.reply_text("â ØªÙ Ø§Ø³ØªÙØ§Ù Ø§ÙØ¥ÙØµØ§Ù. Ø³ÙØªÙ ÙØ±Ø§Ø¬Ø¹ØªÙ ÙÙ ÙØ¨Ù Ø§ÙØ¥Ø¯Ø§Ø±Ø©.")
 
 async def accept_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
