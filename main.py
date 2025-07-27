@@ -8,16 +8,13 @@ from telegram.ext import (
 )
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-# === الإعدادات ===
 BOT_TOKEN = '8427790232:AAHc_D6Bs7iXtLVeC7S_ya92KLJwUxI8YZ4'
 GROUP_ID = -1002789810612
 ADMINS = [6356823688, 7123756100]
 SUBSCRIPTIONS_FILE = 'subscriptions.json'
 
-# === التسجيل ===
 logging.basicConfig(level=logging.INFO)
 
-# === تحميل البيانات ===
 def load_data():
     try:
         with open(SUBSCRIPTIONS_FILE, 'r') as f:
@@ -29,13 +26,9 @@ def save_data(data):
     with open(SUBSCRIPTIONS_FILE, 'w') as f:
         json.dump(data, f)
 
-# === عند إرسال صورة (إيصال) ===
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     photo = update.message.photo[-1]
-    if update.message.document:
-        await update.message.reply_text("الرجاء إرسال الإيصال كصورة، وليس ملف PDF.")
-        return
 
     for admin_id in ADMINS:
         await context.bot.send_photo(
@@ -45,7 +38,6 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
     await update.message.reply_text("✅ تم استلام الإيصال. سيتم مراجعته من قبل الإدارة.")
 
-# === قبول الاشتراك ===
 async def accept_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id not in ADMINS:
         return
@@ -68,7 +60,6 @@ async def accept_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     }
     save_data(data)
 
-# === رفض الاشتراك ===
 async def reject_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id not in ADMINS:
         return
@@ -80,7 +71,6 @@ async def reject_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = int(context.args[0])
     await context.bot.send_message(chat_id=user_id, text="❌ لم يتم قبول الإيصال. يرجى التواصل مع الإدارة إذا كان هناك خطأ.")
 
-# === تذكير قبل انتهاء الاشتراك + طرد من القناة ===
 async def check_subscriptions(application):
     data = load_data()
     now = datetime.now()
@@ -110,11 +100,9 @@ async def check_subscriptions(application):
 
     save_data(data)
 
-# === بدء البوت ===
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("👋 مرحباً! الرجاء إرسال إيصال الدفع (صورة فقط) ليتم مراجعة اشتراكك.")
 
-# === الإطلاق ===
 async def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
@@ -122,7 +110,7 @@ async def main():
     app.add_handler(CommandHandler("accept", accept_command))
     app.add_handler(CommandHandler("reject", reject_command))
     app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
-    
+
     scheduler = AsyncIOScheduler()
     scheduler.add_job(check_subscriptions, "interval", hours=24, args=[app])
     scheduler.start()
