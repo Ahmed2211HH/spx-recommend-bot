@@ -1,4 +1,6 @@
 import logging
+import sys
+import traceback
 import asyncio
 import json
 from datetime import datetime, timedelta
@@ -119,4 +121,10 @@ async def main():
     await app.run_polling()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except Exception as e:
+        with open("error.log", "w") as f:
+            f.write("Fatal Error:\n")
+            traceback.print_exc(file=f)
+        sys.exit(1)
