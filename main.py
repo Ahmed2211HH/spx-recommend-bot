@@ -1,133 +1,98 @@
+
 import os
-import json
-import asyncio
 import datetime
 import pytz
-from telegram import Update, InputMediaPhoto, ChatInviteLink
+from telegram import Update, ChatInviteLink, InputMediaPhoto
 from telegram.ext import (
-    ApplicationBuilder, CommandHandler, MessageHandler,
-    filters, ContextTypes
+    ApplicationBuilder, CommandHandler, MessageHandler, filters,
+    ContextTypes
 )
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.date import DateTrigger
 
 # إعدادات
-BOT_TOKEN = '8427790232:AAHc_D6Bs7iXtLVeC7S_ya92KLJwUxI8YZ4'
+BOT_TOKEN = "8427790232:AAHc_D6Bs7iXtLVeC7S_ya92KLJwUxI8YZ4"
 GROUP_ID = -1002789810612
-ADMINS = [7123756100, 6356823688]
+ADMINS = [6356823688, 7123756100]
 TIMEZONE = pytz.timezone("Asia/Riyadh")
-DATA_FILE = 'subs.json'
 
-# تحميل بيانات الاشتراكات
-if os.path.exists(DATA_FILE):
-    with open(DATA_FILE, 'r') as f:
-        subscriptions = json.load(f)
-else:
-    subscriptions = {}
+# قاعدة بيانات مصغرة (في الذاكرة)
+subscriptions = {}
 
-# حفظ البيانات
-def save_data():
-    with open(DATA_FILE, 'w') as f:
-        json.dump(subscriptions, f)
-
-# إرسال تنبيه قبل انتهاء الاشتراك
-async def notify_before_end(app, user_id):
-    try:
-        await app.bot.send_message(user_id, "📢 تذكير: تبقى 3 أيام على انتهاء اشتراكك. يمكنك التجديد الآن لتجنب انقطاع الخدمة.")
-    except:
-        pass
-
-# طرد المستخدم من القروب
-async def remove_user(app, user_id):
-    try:
-        await app.bot.ban_chat_member(GROUP_ID, user_id)
-        await app.bot.unban_chat_member(GROUP_ID, user_id)
-    except:
-        pass
-
-# /start
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    if user_id not in ADMINS:
-        await update.message.reply_text("مرحبًا! الرجاء إرسال إيصال الدفع كصورة لإتمام الاشتراك.")
-    else:
-        await update.message.reply_text("مرحبًا مشرف. أي صورة إيصال يتم إرسالها ستصلك للموافقة.")
-
-# استقبال صورة الإيصال
+# استقبال الإيصال
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user
-    user_id = user.id
-
-    if not update.message.photo:
-        return await update.message.reply_text("الرجاء إرسال الإيصال كصورة فقط (لا PDF).")
-
+    user_id = update.effective_user.id
     photo = update.message.photo[-1].file_id
-    for admin_id in ADMINS:
-        try:
-            await context.bot.send_photo(
-                chat_id=admin_id,
-                photo=photo,
-                caption=f"🧾 إيصال جديد من {user.full_name}\nID: {user_id}\n\nللموافقة: /approve_{user_id}"
-            )
-        except:
-            continue
+    caption = f"🧾 إيصال جديد من المستخدم: {user_id}"
 
-    await update.message.reply_text("📩 تم استلام الإيصال بنجاح، بانتظار موافقة الإدارة.")
+    # إرسال لكل مشرف
+    for admin in ADMINS:
+        await context.bot.send_photo(chat_id=admin, photo=photo, caption=caption)
 
-# الموافقة من المشرف
-async def approve(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("📨 تم استلام الإيصال وسيتم مراجعته من الإدارة.")
+
+# قبول الاشتراك من قبل المشرف
+async def accept(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id not in ADMINS:
-        return
-
-    command = update.message.text
-    if not command.startswith("/approve_"):
-        return
-
-    user_id = int(command.split("_")[1])
-    app = context.application
+        return await update.message.reply_text("🚫 هذا الأمر للمشرفين فقط.")
 
     try:
-        invite_link = await app.bot.create_chat_invite_link(
-            chat_id=GROUP_ID,
-            member_limit=1,
-            creates_join_request=False,
-            expire_date=datetime.datetime.now(TIMEZONE) + datetime.timedelta(minutes=1)
-        )
+        target_id = int(context.args[0])
+    except:
+        return await update.message.reply_text("❌ استخدم الأمر كذا:\n/accept 123456789")
 
-        await app.bot.send_message(user_id, f"✅ تم تفعيل اشتراكك، هذا رابط الدخول المؤقت:\n{invite_link.invite_link}")
+    # إنشاء رابط مؤقت
+    invite: ChatInviteLink = await context.bot.create_chat_invite_link(
+        chat_id=GROUP_ID,
+        member_limit=1,
+        expire_date=datetime.datetime.now(TIMEZONE) + datetime.timedelta(seconds=30)
+    )
 
-        now = datetime.datetime.now(TIMEZONE)
-        end_date = now + datetime.timedelta(days=28)
-        warn_date = end_date - datetime.timedelta(days=3)
+    await context.bot.send_message(chat_id=target_id, text=f"✅ تم قبول اشتراكك. هذا رابط الدخول المؤقت:\n{invite.invite_link}")
 
-        subscriptions[str(user_id)] = end_date.strftime('%Y-%m-%d %H:%M:%S')
-        save_data()
+    # تسجيل الاشتراك
+    end_date = datetime.datetime.now(TIMEZONE) + datetime.timedelta(days=28)
+    subscriptions[target_id] = end_date
 
-        scheduler.add_job(
-            notify_before_end,
-            trigger=DateTrigger(run_date=warn_date),
-            args=[app, user_id]
-        )
-        scheduler.add_job(
-            remove_user,
-            trigger=DateTrigger(run_date=end_date),
-            args=[app, user_id]
-        )
+    # جدولة التذكير قبل 3 أيام
+    remind_date = end_date - datetime.timedelta(days=3)
+    context.job_queue.run_once(
+        reminder_job, when=DateTrigger(remind_date), data={"user_id": target_id}
+    )
 
-    except Exception as e:
-        await update.message.reply_text(f"حدث خطأ أثناء إنشاء الرابط:\n{e}")
+    # جدولة الطرد
+    context.job_queue.run_once(
+        kick_job, when=DateTrigger(end_date), data={"user_id": target_id}
+    )
 
-# إعداد السكيجولر
-scheduler = AsyncIOScheduler(timezone=TIMEZONE)
-scheduler.start()
+# تذكير بالتجديد
+async def reminder_job(context: ContextTypes.DEFAULT_TYPE):
+    user_id = context.job.data["user_id"]
+    await context.bot.send_message(chat_id=user_id, text="⏳ تبقّى 3 أيام على نهاية اشتراكك. يرجى التجديد لتجنب الطرد.")
 
-# إنشاء البوت
+# طرد من لم يُجدد
+async def kick_job(context: ContextTypes.DEFAULT_TYPE):
+    user_id = context.job.data["user_id"]
+    try:
+        await context.bot.ban_chat_member(chat_id=GROUP_ID, user_id=user_id)
+        await context.bot.unban_chat_member(chat_id=GROUP_ID, user_id=user_id)
+    except:
+        pass
+
+# أمر /start
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id in ADMINS:
+        await update.message.reply_text("أهلاً بك مشرف. أرسل /accept 123456789 لقبول الاشتراكات.")
+    else:
+        await update.message.reply_text("أرسل صورة إيصال الدفع هنا لمراجعة اشتراكك.")
+
+# إعداد التطبيق
 app = ApplicationBuilder().token(BOT_TOKEN).build()
-
 app.add_handler(CommandHandler("start", start))
+app.add_handler(CommandHandler("accept", accept))
 app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
-app.add_handler(MessageHandler(filters.TEXT & filters.Regex(r'^/approve_\d+$'), approve))
 
 # تشغيل البوت
 if __name__ == "__main__":
-    app.run_polling()
+    import asyncio
+    asyncio.run(app.run_polling())
