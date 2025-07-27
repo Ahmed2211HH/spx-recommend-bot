@@ -1,10 +1,10 @@
 import logging
 import pytz
 from datetime import datetime, timedelta
-from telegram import Update, InputMediaPhoto, Bot
+from telegram import Update, Bot
 from telegram.ext import (
     ApplicationBuilder, CommandHandler, MessageHandler,
-    filters, ContextTypes, CallbackContext
+    filters, ContextTypes
 )
 import asyncio
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -33,7 +33,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     if user_id in ADMINS:
-        return  # تجاهل صور المشرفين
+        return
 
     photo = update.message.photo[-1]
     file_id = photo.file_id
@@ -63,25 +63,22 @@ async def approve(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ لا يوجد طلب معلق لهذا المستخدم.")
         return
 
-    # رابط مؤقت
     invite_link = await context.bot.create_chat_invite_link(
         chat_id=GROUP_ID,
         member_limit=1,
         expire_date=datetime.now() + timedelta(minutes=1)
     )
 
-    # إرسال الرابط للمستخدم
     await context.bot.send_message(
         chat_id=target_id,
         text=f"✅ تم قبول اشتراكك. هذا رابط الدخول (صالح لدقيقة واحدة فقط):\n{invite_link.invite_link}"
     )
 
-    # حفظ وقت الاشتراك
     end_time = datetime.now(TIMEZONE) + timedelta(days=28)
     subscriptions[target_id] = {"end": end_time, "warned": False}
     del pending_users[target_id]
 
-    await update.message.reply_text(f"✅ تم قبول المستخدم وإرسال الرابط المؤقت.")
+    await update.message.reply_text("✅ تم قبول المستخدم وإرسال الرابط المؤقت.")
 
 # ====== متابعة الاشتراكات ======
 async def check_subscriptions(bot: Bot):
