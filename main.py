@@ -1,7 +1,7 @@
 import logging
 import pytz
 from datetime import datetime, timedelta
-from telegram import Update, InputMediaPhoto
+from telegram import Update, InputMediaPhoto, Bot
 from telegram.ext import (
     ApplicationBuilder, CommandHandler, MessageHandler,
     filters, ContextTypes, CallbackContext
