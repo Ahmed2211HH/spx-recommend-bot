@@ -32,19 +32,28 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     photo = update.message.photo[-1]
 
+    caption = f"📥 إيصال جديد من: {user.full_name}
+ID: {user.id}
+
+✅ للموافقة:
+/accept {user.id}
+❌ للرفض:
+/reject {user.id}"
+
     for admin_id in ADMINS:
         await context.bot.send_photo(
             chat_id=admin_id,
             photo=photo.file_id,
-            caption = f"📥 إيصال جديد من: {user.full_name}\nID: {user.id}\n\nللموافقة:\n/accept {user.id}\nللرفض:\n/reject {user.id}"
-    await update.message.reply_text("â ØªÙ Ø§Ø³ØªÙØ§Ù Ø§ÙØ¥ÙØµØ§Ù. Ø³ÙØªÙ ÙØ±Ø§Ø¬Ø¹ØªÙ ÙÙ ÙØ¨Ù Ø§ÙØ¥Ø¯Ø§Ø±Ø©.")
+            caption=caption
+        )
+    await update.message.reply_text("✅ تم استلام الإيصال. سيتم مراجعته من قبل الإدارة.")
 
 async def accept_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id not in ADMINS:
         return
 
     if len(context.args) != 1:
-        await update.message.reply_text("â ÙØ±Ø¬Ù ØªØ­Ø¯ÙØ¯ ID Ø§ÙÙØ³ØªØ®Ø¯Ù: /accept USER_ID")
+        await update.message.reply_text("❌ يرجى تحديد ID المستخدم: /accept USER_ID")
         return
 
     user_id = int(context.args[0])
@@ -53,7 +62,7 @@ async def accept_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         expire_date=datetime.now() + timedelta(seconds=60),
         member_limit=1
     )
-    await context.bot.send_message(chat_id=user_id, text=f"ð ØªÙ ÙØ¨ÙÙ Ø§Ø´ØªØ±Ø§ÙÙ! ÙØ°Ø§ Ø±Ø§Ø¨Ø· Ø§ÙÙØ¬ÙÙØ¹Ø© (ØµØ§ÙØ­ ÙØ¯ÙÙÙØ© ÙØ§Ø­Ø¯Ø© ÙÙØ·):
+    await context.bot.send_message(chat_id=user_id, text=f"🎉 تم قبول اشتراكك! هذا رابط المجموعة (صالح لدقيقة واحدة فقط):
 {invite_link.invite_link}")
 
     data = load_data()
@@ -67,11 +76,11 @@ async def reject_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     if len(context.args) != 1:
-        await update.message.reply_text("â ÙØ±Ø¬Ù ØªØ­Ø¯ÙØ¯ ID Ø§ÙÙØ³ØªØ®Ø¯Ù: /reject USER_ID")
+        await update.message.reply_text("❌ يرجى تحديد ID المستخدم: /reject USER_ID")
         return
 
     user_id = int(context.args[0])
-    await context.bot.send_message(chat_id=user_id, text="â ÙÙ ÙØªÙ ÙØ¨ÙÙ Ø§ÙØ¥ÙØµØ§Ù. ÙØ±Ø¬Ù Ø§ÙØªÙØ§ØµÙ ÙØ¹ Ø§ÙØ¥Ø¯Ø§Ø±Ø© Ø¥Ø°Ø§ ÙØ§Ù ÙÙØ§Ù Ø®Ø·Ø£.")
+    await context.bot.send_message(chat_id=user_id, text="❌ لم يتم قبول الإيصال. يرجى التواصل مع الإدارة إذا كان هناك خطأ.")
 
 async def check_subscriptions(application):
     data = load_data()
@@ -86,7 +95,7 @@ async def check_subscriptions(application):
             try:
                 await application.bot.send_message(
                     chat_id=int(user_id),
-                    text="â³ ØªØ¨ÙÙ 3 Ø£ÙØ§Ù Ø¹ÙÙ ÙÙØ§ÙØ© Ø§Ø´ØªØ±Ø§ÙÙ. ÙØ±Ø¬Ù Ø§ÙØªØ¬Ø¯ÙØ¯ ÙØªØ¬ÙØ¨ Ø§ÙØ·Ø±Ø¯ ÙÙ Ø§ÙÙØ¬ÙÙØ¹Ø©."
+                    text="⏳ تبقى 3 أيام على نهاية اشتراكك. يرجى التجديد لتجنب الطرد من المجموعة."
                 )
                 sub['notified'] = True
             except:
@@ -104,7 +113,7 @@ async def check_subscriptions(application):
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print(f"Start command received from: {update.effective_user.id}")
-    await update.message.reply_text("ð ÙØ±Ø­Ø¨Ø§Ù! Ø§ÙØ±Ø¬Ø§Ø¡ Ø¥Ø±Ø³Ø§Ù Ø¥ÙØµØ§Ù Ø§ÙØ¯ÙØ¹ (ØµÙØ±Ø© ÙÙØ·) ÙÙØªÙ ÙØ±Ø§Ø¬Ø¹Ø© Ø§Ø´ØªØ±Ø§ÙÙ.")
+    await update.message.reply_text("👋 مرحباً! الرجاء إرسال إيصال الدفع (صورة فقط) ليتم مراجعة اشتراكك.")
 
 async def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
@@ -118,7 +127,7 @@ async def main():
     scheduler.add_job(check_subscriptions, "interval", hours=24, args=[app])
     scheduler.start()
 
-    print("â Bot is running...")
+    print("✅ Bot is running...")
     await app.run_polling()
 
 if __name__ == "__main__":
